@@ -2,8 +2,9 @@ import json
 import torch
 import numpy as np
 from properties import *
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
+if REMOVE_STOP_WORDS:
+    from nltk.corpus import stopwords
+    from nltk.stem import WordNetLemmatizer
 
 
 def to_tensor(array):
@@ -28,8 +29,9 @@ def get_captions(caption_file):
     img_to_caption = {}
     id_img = {}
     max_len = 0
-    cached_stop_words = stopwords.words("english")
-    lemmatizer = WordNetLemmatizer()
+    if REMOVE_STOP_WORDS:
+        cached_stop_words = stopwords.words("english")
+        lemmatizer = WordNetLemmatizer()
     with open(caption_file, 'r', encoding='utf-8') as caption_data:
         i = 0
         for lines in caption_data.readlines():
@@ -38,7 +40,10 @@ def get_captions(caption_file):
             caption = split_line[1]
             img_id = img_id.replace(".jpg", "")
             if img_id not in img_to_caption:
-                img_to_caption[img_id] = process_words(caption.replace("\n", "").lower(), cached_stop_words, lemmatizer)
+                if REMOVE_STOP_WORDS:
+                    img_to_caption[img_id] = process_words(caption.replace("\n", "").lower(), cached_stop_words, lemmatizer)
+                else:
+                    img_to_caption[img_id] = process_words(caption.replace("\n", "").lower())
                 if len(img_to_caption[img_id]) > max_len:
                     max_len = len(img_to_caption[img_id])
                 id_img[i] = img_id
@@ -46,10 +51,13 @@ def get_captions(caption_file):
     return img_to_caption, max_len, id_img
 
 
-def process_words(sentence, cached_stop_words, lemmatizer):
-    #words = [word for word in sentence.split(" ") if word not in cached_stop_words]
-    #words = [lemmatizer.lemmatize(word) for word in words]
-    return sentence.split(" ")
+def process_words(sentence, cached_stop_words=None, lemmatizer=None):
+    if cached_stop_words is not None:
+        words = [word for word in sentence.split(" ") if word not in cached_stop_words]
+        words = [lemmatizer.lemmatize(word) for word in words]
+        return words
+    else:
+        return sentence.split(" ")
 
 
 def concatenate_all_captions(img_to_caption):

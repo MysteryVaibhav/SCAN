@@ -42,7 +42,8 @@ class SCAN(torch.nn.Module):
         # Average pooling for image_2_text
         s_t_i = F.cosine_similarity(h_t, a_v, dim=2).sum(1) / len(h_t)
 
-        return s_t_i[perm_idx]                              # re-order the similarity scores
+        # re-order the similarity scores
+        return s_t_i[perm_idx]
 
 
 class Encoder(torch.nn.Module):
@@ -53,7 +54,7 @@ class Encoder(torch.nn.Module):
 
     def forward(self, embeds, mask, seq_lens):
         # Sorting sequences by their lengths for packing
-        embeds = embeds.transpose(0, 1)       # seq_len * batch_size * embedding_dimension
+        embeds = embeds.transpose(0, 1)                                                         # seq_len * batch_size * embedding_dimension
 
         packed_input = pack_padded_sequence(embeds, seq_lens.data.cpu().numpy())
         packed_outputs, _ = self.gru(packed_input)

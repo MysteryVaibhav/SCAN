@@ -1,6 +1,7 @@
 import os
 
 
+REMOVE_STOP_WORDS = False
 # TRAINING PARAMS
 BATCH_SIZE = 128
 EPOCHS = 100
@@ -30,7 +31,7 @@ MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/')
 if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)
 
-#Local path
+#Local path for testing
 #CAPTION_INFO = 'C:\\Users\\myste\\Downloads\\results_20130124.token'
 #SPLIT_INFO = 'C:\\Users\\myste\\Downloads\\split\\'
 #CONCEPT_DIR = 'C:\\Users\\myste\\Downloads\\semantic_feat\\'
