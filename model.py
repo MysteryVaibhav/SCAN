@@ -16,52 +16,53 @@ class SCAN(torch.nn.Module):
 
     def forward(self, input_caption, mask, input_image, is_inference):
         # Sorting batch by length of captions, can't do this before because of negative mining
-        seq_lens = mask.sum(dim=1).long()
-        seq_lens, perm_idx = seq_lens.sort(0, descending=True)
+        #seq_lens = mask.sum(dim=1).long()
+        #seq_lens, perm_idx = seq_lens.sort(0, descending=True)
 
         # sort everything according to permutation idx
-        input_caption = input_caption[perm_idx]
-        mask = mask[perm_idx]
-        input_image = input_image[perm_idx]
+        #input_caption = input_caption[perm_idx]
+        #mask = mask[perm_idx]
+        #input_image = input_image[perm_idx]
 
         embeds = self.word_embeddings(input_caption)                                            # bs * max_seq_len * 300
-        h_t = self.text_encoder(embeds, mask, seq_lens)
+        h_t = self.text_encoder(embeds, mask)
         # Modify mask, according to max_seq_len in the batch
-        max_seq_len_in_batch = h_t.size(1)
-        mask = mask[:, :max_seq_len_in_batch]
+        #max_seq_len_in_batch = h_t.size(1)
+        #mask = mask[:, :max_seq_len_in_batch]
 
         # Projecting the image to embedding dimensions
-        input_image = self.linear_transform(input_image)                                        # bs * roi * hidden_dim
+        h = self.linear_transform(input_image)                                        # bs * roi * hidden_dim
 
-        similarity_matrix = torch.bmm(F.normalize(input=input_image, p=2, dim=2),
-                                      F.normalize(input=h_t.permute(0, 2, 1),
-                                                  p=2, dim=2))                                  # bs * roi * max_seq_len
+        similarity_matrix = torch.bmm(F.normalize(input=h, p=2, dim=2),
+                                      F.normalize(input=h_t,
+                                                  p=2, dim=2).permute(0, 2, 1))                                  # bs * roi * max_seq_len
         s_t = F.normalize(input=similarity_matrix.clamp(min=0), p=2, dim=2)
-        a_v = self.sca(h_t, mask, input_image, s_t)                                             # bs * max_seq_len * hidden_dim
+        a_v = self.sca(h_t, mask, h, s_t)                                             # bs * max_seq_len * hidden_dim
 
         # Average pooling for image_2_text
-        s_t_i = F.cosine_similarity(h_t, a_v, dim=2).sum(1) / len(h_t)
-
+        #s_t_i = F.cosine_similarity(h_t, a_v, dim=2).sum(1) / len(h_t)
+        s_t_i = F.cosine_similarity(h_t * mask.unsqueeze(2), a_v * mask.unsqueeze(2), dim=2).sum(1) / mask.sum(dim=1)
+        
         # re-order the similarity scores
-        return s_t_i[perm_idx]
+        return s_t_i
 
 
 class Encoder(torch.nn.Module):
     def __init__(self, hidden_dimension, embedding_dimension):
         super(Encoder, self).__init__()
         self.hidden_dim = hidden_dimension
-        self.gru = nn.GRU(embedding_dimension, hidden_dimension, bidirectional=True)
+        self.gru = nn.GRU(embedding_dimension, hidden_dimension)
 
-    def forward(self, embeds, mask, seq_lens):
+    def forward(self, embeds, mask):
         # Sorting sequences by their lengths for packing
-        embeds = embeds.transpose(0, 1)                                                         # seq_len * batch_size * embedding_dimension
+        embeds = embeds.permute(1, 0, 2)                                                         # seq_len * batch_size * embedding_dimension
 
-        packed_input = pack_padded_sequence(embeds, seq_lens.data.cpu().numpy())
-        packed_outputs, _ = self.gru(packed_input)
-        h, _ = pad_packed_sequence(packed_outputs)
+        #packed_input = pack_padded_sequence(embeds, seq_lens.data.cpu().numpy())
+        h, _ = self.gru(embeds)
+        #h, _ = pad_packed_sequence(packed_outputs)
 
         # h = ( h_forward + h_backward ) / 2
-        h = h.view(h.size(0), h.size(1), 2, -1).sum(2).view(h.size(0), h.size(1), -1) / 2
+        #h = h.view(h.size(0), h.size(1), 2, -1).sum(2).view(h.size(0), h.size(1), -1) / 2
 
         return h.permute(1, 0, 2)                                                               # bs * max_seq_len * hidden_dim
 

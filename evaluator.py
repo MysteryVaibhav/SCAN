@@ -1,4 +1,5 @@
 from util import *
+from tqdm import tqdm
 
 
 class Evaluator:
@@ -25,7 +26,7 @@ class Evaluator:
         r_1 = 0
         r_5 = 0
         r_10 = 0
-        for (caption, mask, images, label) in data_loader:
+        for (caption, mask, images, label) in tqdm(data_loader):
             caption, mask, image = self.get_all_image_caption_pairs(caption, mask, images)
             s = model(to_variable(caption),
                       to_variable(mask),
@@ -35,14 +36,14 @@ class Evaluator:
 
             # Compute similarity with the existing images
             top_10_img_idx = (-similarity[:]).argsort()[:10]
-            if label == plain_ids[top_10_img_idx[0]]:
+            if label[0] == plain_ids[top_10_img_idx[0]]:
                 r_1 += 1
                 r_5 += 1
                 r_10 += 1
-            elif label in [plain_ids[x] for x in top_10_img_idx[1:5]]:
+            elif label[0] in [plain_ids[x] for x in top_10_img_idx[1:5]]:
                 r_5 += 1
                 r_10 += 1
-            elif label in [plain_ids[x] for x in top_10_img_idx[6:10]]:
+            elif label[0] in [plain_ids[x] for x in top_10_img_idx[6:10]]:
                 r_10 += 1
 
         return r_1 / len(ids), r_5 / len(ids), r_10 / len(ids)

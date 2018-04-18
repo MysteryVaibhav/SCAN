@@ -87,6 +87,7 @@ class DataLoader:
         self.test_ids = get_ids('test', params.split_file)
         self.plain_test_ids = get_ids('test', params.split_file, strip=True)
         kwargs = {'num_workers': 4, 'pin_memory': True} if torch.cuda.is_available() else {}
+        #kwargs = {} if torch.cuda.is_available() else {}
         self.training_data_loader = torch.utils.data.DataLoader(CustomDataSet(self.img_one_hot,
                                                                               self.train_ids,
                                                                               params.regions_in_image,
@@ -113,15 +114,23 @@ class DataLoader:
     @staticmethod
     def hard_negative_mining(model, pos_cap, pos_mask, pos_image, neg_cap, neg_mask, neg_image):
         model.eval()
-        similarity = model(to_variable(neg_cap), to_variable(neg_mask), to_variable(pos_image), False)
-        s_v_pos_u_neg_w_neg = similarity.data.cpu().numpy()
-        random_indices = [get_k_random_numbers(len(pos_image), curr) for curr in range(len(pos_image))]
-        argmax_cap = to_tensor([each[np.argmax(s_v_pos_u_neg_w_neg[each])] for each in random_indices]).long()
-        neg_cap = torch.index_select(neg_cap, 0, argmax_cap)
-        neg_mask = torch.index_select(neg_mask, 0, argmax_cap)
-        similarity = model(to_variable(pos_cap), to_variable(pos_mask), to_variable(neg_image), False)
-        s_u_pos_v_neg_w_neg = similarity.data.cpu().numpy()
-        random_indices = [get_k_random_numbers(len(neg_image), curr) for curr in range(len(neg_image))]
-        argmax_img = to_tensor([each[np.argmax(s_u_pos_v_neg_w_neg[each])] for each in random_indices]).long()
-        neg_image = torch.index_select(neg_image, 0, argmax_img)
-        return pos_cap, pos_mask, pos_image, neg_cap, neg_mask, neg_image
+        bs = len(pos_image)
+
+        hard_neg_cap = torch.LongTensor(neg_cap.size())
+        hard_neg_mask = torch.FloatTensor(neg_mask.size())
+        hard_neg_img = torch.FloatTensor(neg_image.size())
+        for i in range(bs):
+
+            each_image = pos_image[i].unsqueeze(0).repeat(bs, 1, 1)
+            similarity = model(to_variable(neg_cap), to_variable(neg_mask), to_variable(each_image), False).data.cpu().numpy()
+            hardest_neg = np.argmax(similarity)
+            hard_neg_cap[i] = neg_cap[hardest_neg]
+            hard_neg_mask[i] = neg_mask[hardest_neg]
+
+            each_cap = pos_cap[i].unsqueeze(0).repeat(bs, 1)
+            each_mask = pos_mask[i].unsqueeze(0).repeat(bs, 1)
+            similarity = model(to_variable(each_cap), to_variable(each_mask), to_variable(neg_image), False).data.cpu().numpy()
+            hardest_neg = np.argmax(similarity)
+            hard_neg_img[i] = neg_image[hardest_neg]
+
+        return pos_cap, pos_mask, pos_image, hard_neg_cap, hard_neg_mask, hard_neg_img
