@@ -42,8 +42,10 @@ class SCAN(torch.nn.Module):
         # Average pooling for image_2_text
         #s_t_i = F.cosine_similarity(h_t, a_v, dim=2).sum(1) / len(h_t)
         s_t_i = F.cosine_similarity(h_t * mask.unsqueeze(2), a_v * mask.unsqueeze(2), dim=2).sum(1) / mask.sum(dim=1)
-        
-        # re-order the similarity scores
+
+        if is_inference:
+            return s_t_i, F.normalize(h_t * mask.unsqueeze(2), p=2, dim=2), F.normalize(a_v * mask.unsqueeze(2), p=2, dim=2)
+
         return s_t_i
 
 
