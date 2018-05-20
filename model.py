@@ -53,7 +53,7 @@ class Encoder(torch.nn.Module):
     def __init__(self, hidden_dimension, embedding_dimension):
         super(Encoder, self).__init__()
         self.hidden_dim = hidden_dimension
-        self.gru = nn.GRU(embedding_dimension, hidden_dimension)
+        self.gru = nn.GRU(embedding_dimension, hidden_dimension, bidirectional=True)
 
     def forward(self, embeds, mask):
         # Sorting sequences by their lengths for packing
@@ -64,7 +64,7 @@ class Encoder(torch.nn.Module):
         #h, _ = pad_packed_sequence(packed_outputs)
 
         # h = ( h_forward + h_backward ) / 2
-        #h = h.view(h.size(0), h.size(1), 2, -1).sum(2).view(h.size(0), h.size(1), -1) / 2
+        h = h.view(h.size(0), h.size(1), 2, -1).sum(2) / 2
 
         return h.permute(1, 0, 2)                                                               # bs * max_seq_len * hidden_dim
 
