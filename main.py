@@ -23,7 +23,7 @@ def parse_arguments():
     parser.add_argument("--margin", dest="margin", type=int, default=MARGIN)
     parser.add_argument("--clip_value", dest="clip_value", type=float, default=CLIP_VALUE)
     parser.add_argument("--wdecay", dest="wdecay", type=float, default=0.00001)
-    parser.add_argument("--step_size", dest="step_size", type=int, default=15)
+    parser.add_argument("--step_size", dest="step_size", type=int, default=30)
     parser.add_argument("--gamma", dest="gamma", type=int, default=10)
     parser.add_argument("--lambda_1", dest="lambda_1", type=int, default=9)
     parser.add_argument("--validate_every", dest="validate_every", type=int, default=5)

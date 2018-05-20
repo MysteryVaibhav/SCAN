@@ -31,7 +31,7 @@ class Evaluator:
             s = model(to_variable(caption),
                       to_variable(mask),
                       to_variable(image),
-                      True)
+                      False)
             similarity = s.data.cpu().numpy()
 
             # Compute similarity with the existing images

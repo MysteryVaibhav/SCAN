@@ -17,9 +17,9 @@ class CustomDataSet(torch.utils.data.TensorDataset):
     def __getitem__(self, idx):
         input, mask = self.img_one_hot[self.ids[idx]]
 
-        image = np.random.random((self.regions_in_image, self.visual_feature_dimension))
-        #image = np.load(self.image_features_dir + "{}.npy".format(self.ids[idx].split("#")[0])).reshape(
-        #               (self.regions_in_image, self.visual_feature_dimension))
+        #image = np.random.random((self.regions_in_image, self.visual_feature_dimension))
+        image = np.load(self.image_features_dir + "{}.npy".format(self.ids[idx].split("#")[0])).reshape(
+                       (self.regions_in_image, self.visual_feature_dimension))
 
         r_n = idx
         img_idx = self.ids[idx].split("#")[0]
@@ -29,9 +29,9 @@ class CustomDataSet(torch.utils.data.TensorDataset):
             r_n_idx = self.ids[r_n].split("#")[0]
 
         # Return negative caption and image
-        #image_neg = np.load(self.image_features_dir + "{}.npy".format(self.ids[r_n].split("#")[0])).reshape(
-        #                   (self.regions_in_image, self.visual_feature_dimension))
-        image_neg = np.random.random((self.regions_in_image, self.visual_feature_dimension))
+        image_neg = np.load(self.image_features_dir + "{}.npy".format(self.ids[r_n].split("#")[0])).reshape(
+                           (self.regions_in_image, self.visual_feature_dimension))
+        #image_neg = np.random.random((self.regions_in_image, self.visual_feature_dimension))
 
         input_neg, mask_neg = self.img_one_hot[self.ids[r_n]]
 
@@ -66,9 +66,9 @@ class CustomDataSet1(torch.utils.data.TensorDataset):
         image_features = np.zeros((len(self.image_ids), self.regions_in_image, self.visual_feature_dimension))
         # Get all the 1000 image features
         for i, id in enumerate(self.image_ids):
-            image_features[i] = np.random.random((self.regions_in_image, self.visual_feature_dimension))
-            #image_features[i] = np.load(self.image_features_dir + "{}.npy".format(id)).reshape(
-            #                           (self.regions_in_image, self.visual_feature_dimension))
+            #image_features[i] = np.random.random((self.regions_in_image, self.visual_feature_dimension))
+            image_features[i] = np.load(self.image_features_dir + "{}.npy".format(id)).reshape(
+                                       (self.regions_in_image, self.visual_feature_dimension))
         return image_features
 
     def __getitem__(self, idx):
@@ -124,20 +124,27 @@ class DataLoader:
 
         bs = len(pos_image)
 
-        hard_neg_cap = torch.LongTensor(neg_cap.size())
-        hard_neg_mask = torch.FloatTensor(neg_mask.size())
-        hard_neg_img = torch.FloatTensor(neg_image.size())
+        hard_neg_cap = None
+        hard_neg_mask = None
+        hard_neg_img = None
         for i in range(bs):
             each_image = z_v[i]
             similarity = (each_image * z_u).sum(2).sum(1) / neg_mask.sum(dim=1)
             hardest_neg = similarity.max(dim=0)[1].data[0]
-            hard_neg_cap[i] = neg_cap[hardest_neg]
-            hard_neg_mask[i] = neg_mask[hardest_neg]
+            if hard_neg_cap is None:
+                hard_neg_cap = neg_cap[hardest_neg].unsqueeze(0)
+                hard_neg_mask = neg_mask[hardest_neg].data.unsqueeze(0)
+            else:
+                hard_neg_cap = torch.cat((hard_neg_cap, neg_cap[hardest_neg].unsqueeze(0)), dim=0)
+                hard_neg_mask = torch.cat((hard_neg_mask, neg_mask[hardest_neg].data.unsqueeze(0)), dim=0)
 
             each_cap = z_u_1[i]
             each_mask = pos_mask[i]
-            similarity = (each_cap * z_v_1).sum(2).sum(1) / each_mask.sum(dim=1)
+            similarity = (each_cap * z_v_1).sum(2).sum(1) / each_mask.sum(dim=0)
             hardest_neg = similarity.max(dim=0)[1].data[0]
-            hard_neg_img[i] = neg_image[hardest_neg]
+            if hard_neg_img is None:
+                hard_neg_img = neg_image[hardest_neg].unsqueeze(0)
+            else:
+                hard_neg_img = torch.cat((hard_neg_img, neg_image[hardest_neg].unsqueeze(0)), dim=0)
 
-        return pos_cap, pos_mask, pos_image, hard_neg_cap, hard_neg_mask, hard_neg_img
+        return pos_cap, pos_mask.data, pos_image, hard_neg_cap, hard_neg_mask, hard_neg_img

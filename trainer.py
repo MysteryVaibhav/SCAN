@@ -113,7 +113,7 @@ class Trainer:
                         print("Recall at 1 increased....saving weights !!")
                         prev_best = r_at_1
                         torch.save(model.state_dict(),
-                                   self.params.model_dir + 'best_model_weights_{}.t7'.format(epoch + 1))
+                                   self.params.model_dir + 'best_model_weights_{}_{:.3f}.t7'.format(epoch + 1, r_at_1))
                 else:
                     print("Epoch {} : Training Loss: {:.5f}".format(epoch + 1, np.asscalar(np.mean(losses))))
         except KeyboardInterrupt:
