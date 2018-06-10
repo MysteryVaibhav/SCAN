@@ -39,42 +39,35 @@ class CustomDataSet(torch.utils.data.TensorDataset):
                to_tensor(input_neg).long(), to_tensor(mask_neg), to_tensor(image_neg)
 
 
-def get_k_random_numbers(n, curr, k=16):
-    random_indices = set()
-    while len(random_indices) < k:
-        idx = np.random.randint(n)
-        if idx != curr and idx not in random_indices:
-            random_indices.add(idx)
-    return list(random_indices)
-
-
 class CustomDataSet1(torch.utils.data.TensorDataset):
-    def __init__(self, img_one_hot, caption_ids, image_ids, regions_in_image, visual_feature_dimension, image_features_dir):
+    def __init__(self, img_one_hot, caption_ids, image_ids, regions_in_image, visual_feature_dimension, image_features_dir, max_caption_len):
         self.img_one_hot = img_one_hot
         self.caption_ids = caption_ids
         self.image_ids = image_ids
-        self.num_of_samples = len(self.caption_ids)
+        self.num_of_samples = len(self.image_ids)
+        self.max_caption_len = max_caption_len
         self.regions_in_image = regions_in_image
         self.visual_feature_dimension = visual_feature_dimension
         self.image_features_dir = image_features_dir
-        self.all_image_features = self.get_all_image_features()
+        self.all_text_features, self.all_text_features_mask = self.get_all_text_features()
 
     def __len__(self):
         return self.num_of_samples
 
-    def get_all_image_features(self):
-        image_features = np.zeros((len(self.image_ids), self.regions_in_image, self.visual_feature_dimension))
-        # Get all the 1000 image features
-        for i, id in enumerate(self.image_ids):
-            #image_features[i] = np.random.random((self.regions_in_image, self.visual_feature_dimension))
-            image_features[i] = np.load(self.image_features_dir + "{}.npy".format(id)).reshape(
-                                       (self.regions_in_image, self.visual_feature_dimension))
-        return image_features
+    def get_all_text_features(self):
+        text_features = np.zeros((len(self.caption_ids), self.max_caption_len))
+        text_features_mask = np.zeros((len(self.caption_ids), self.max_caption_len))
+        # Get all the 5000 text features
+        for i, id in enumerate(self.caption_ids):
+            text_features[i], text_features_mask[i] = self.img_one_hot[id]
+        return text_features, text_features_mask
 
     def __getitem__(self, idx):
-        # Get the caption and mask
-        caption_one_hot, caption_mask = self.img_one_hot[self.caption_ids[idx]]
-        return to_tensor(caption_one_hot).long(), to_tensor(caption_mask), to_tensor(self.all_image_features), self.caption_ids[idx].split("#")[0]
+        # Get the image
+        #image = np.random.random((self.regions_in_image, self.visual_feature_dimension))
+        image = np.load(self.image_features_dir + "{}.npy".format(self.image_ids[idx].split("#")[0])).reshape(
+                       (self.regions_in_image, self.visual_feature_dimension))
+        return to_tensor(image), to_tensor(self.all_text_features), self.all_text_features_mask, self.image_ids[idx]
 
 
 class DataLoader:
@@ -86,6 +79,7 @@ class DataLoader:
         self.plain_val_ids = get_ids('val', params.split_file, strip=True)
         self.test_ids = get_ids('test', params.split_file)
         self.plain_test_ids = get_ids('test', params.split_file, strip=True)
+        self.max_caption_len = params.max_caption_len
         kwargs = {'num_workers': 4, 'pin_memory': True} if torch.cuda.is_available() else {}
         #kwargs = {} if torch.cuda.is_available() else {}
         self.training_data_loader = torch.utils.data.DataLoader(CustomDataSet(self.img_one_hot,
@@ -101,14 +95,16 @@ class DataLoader:
                                                                            self.plain_val_ids,
                                                                            params.regions_in_image,
                                                                            params.visual_feature_dimension,
-                                                                           params.image_features_dir),
+                                                                           params.image_features_dir,
+                                                                           self.max_caption_len),
                                                             batch_size=1, shuffle=False, **kwargs)
         self.test_data_loader = torch.utils.data.DataLoader(CustomDataSet1(self.img_one_hot,
                                                                            self.test_ids,
                                                                            self.plain_test_ids,
                                                                            params.regions_in_image,
                                                                            params.visual_feature_dimension,
-                                                                           params.image_features_dir),
+                                                                           params.image_features_dir,
+                                                                           self.max_caption_len),
                                                             batch_size=1, shuffle=False, **kwargs)
 
     @staticmethod

@@ -37,16 +37,17 @@ class SCAN(torch.nn.Module):
                                       F.normalize(input=h_t,
                                                   p=2, dim=2).permute(0, 2, 1))                                  # bs * roi * max_seq_len
         s_t = F.normalize(input=similarity_matrix.clamp(min=0), p=2, dim=2)
-        a_v = self.sca(h_t, mask, h, s_t)                                             # bs * max_seq_len * hidden_dim
+        a_t = self.sca(h_t, mask, h, s_t)                                             # bs * max_seq_len * hidden_dim
 
         # Average pooling for image_2_text
         #s_t_i = F.cosine_similarity(h_t, a_v, dim=2).sum(1) / len(h_t)
-        s_t_i = F.cosine_similarity(h_t * mask.unsqueeze(2), a_v * mask.unsqueeze(2), dim=2).sum(1) / mask.sum(dim=1)
+        #s_t_i = F.cosine_similarity(h_t * mask.unsqueeze(2), a_v * mask.unsqueeze(2), dim=2).sum(1) / mask.sum(dim=1)
+        s_i_t = F.cosine_similarity(h, a_t, dim=2).sum(1) / self.regions_in_image
 
         if is_inference:
-            return s_t_i, F.normalize(h_t * mask.unsqueeze(2), p=2, dim=2), F.normalize(a_v * mask.unsqueeze(2), p=2, dim=2)
+            return s_i_t, F.normalize(h, p=2, dim=2), F.normalize(a_t, p=2, dim=2)
 
-        return s_t_i
+        return s_i_t
 
 
 class Encoder(torch.nn.Module):
@@ -77,9 +78,8 @@ class StackedCrossAttention(torch.nn.Module):
     def forward(self, h, mask, img, s_t):
         alpha_t = self.lambda_1 * s_t
         alpha_t.data.masked_fill_((1 - mask).data.unsqueeze(1).byte(), -float('inf'))
-        alpha = F.softmax(input=alpha_t, dim=1)                                                 # bs * roi * max_seq_len
-        alpha.data.masked_fill_((1 - mask).data.unsqueeze(1).byte(), 0)
-        attended_image_vectors = torch.bmm(alpha.permute(0, 2, 1), img)                         # bs * max_seq_len * hidden_dim
-        return attended_image_vectors
+        alpha = F.softmax(input=alpha_t, dim=2)                                                 # bs * roi * max_seq_len
+        attended_sen_vectors = torch.bmm(alpha, h)                                              # bs * roi * hidden_dim
+        return attended_sen_vectors
 
 
