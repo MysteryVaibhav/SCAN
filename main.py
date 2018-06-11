@@ -67,6 +67,21 @@ def main():
         print("R@5 : {}".format(r_5))
         print("R@10 : {}".format(r_10))
         print("Evaluating model on test set...[OK]")
+    elif params.mode == 2:
+        print("Loading model...")
+        model = SCAN(params)
+        model_file_path = os.path.join(params.model_dir, params.model_file_name)
+        model.load_state_dict(torch.load(model_file_path))
+        if torch.cuda.is_available():
+            model = model.cuda()
+        print("Loading model...[OK]")
+
+        print("Evaluating model on test set...")
+        r_1, r_5, r_10 = evaluator.recall_i2t(model, is_test=True)
+        print("R@1 : {}".format(r_1))
+        print("R@5 : {}".format(r_5))
+        print("R@10 : {}".format(r_10))
+        print("Evaluating model on test set...[OK]")
 
 
 if __name__ == '__main__':
