@@ -45,7 +45,7 @@ class SCAN(torch.nn.Module):
         s_i_t = F.cosine_similarity(h, a_t, dim=2).sum(1) / self.regions_in_image
 
         if is_inference:
-            return s_i_t, F.normalize(h, p=2, dim=2), F.normalize(a_t, p=2, dim=2)
+            return s_i_t, F.normalize(a_t, p=2, dim=2), F.normalize(h, p=2, dim=2)
 
         return s_i_t
 
@@ -79,7 +79,7 @@ class StackedCrossAttention(torch.nn.Module):
         alpha_t = self.lambda_1 * s_t
         alpha_t.data.masked_fill_((1 - mask).data.unsqueeze(1).byte(), -float('inf'))
         alpha = F.softmax(input=alpha_t, dim=2)                                                 # bs * roi * max_seq_len
-        attended_sen_vectors = torch.bmm(alpha, h)                                              # bs * roi * hidden_dim
+        attended_sen_vectors = torch.bmm(alpha, h * mask.unsqueeze(2))                                              # bs * roi * hidden_dim
         return attended_sen_vectors
 
 

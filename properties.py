@@ -23,10 +23,10 @@ MARGIN = 0.2
 
 # PATH
 #TRAIN_IMAGES_DIR = '/mnt/ssd1/junweil/vision_language/resnet-152/'
-TRAIN_IMAGES_DIR = '/mnt/ssd1/junweil/vision_language/poyao_bottomup_feats/'
-CAPTION_INFO = '/mnt/ssd1/junweil/vision_language/results_20130124.token'
-SPLIT_INFO = '/mnt/ssd1/junweil/vision_language/splits/'
-IMAGES_DIR = '/data/disk1/junweil/vision_language/data/flickr30k/flickr30k_images/'
+TRAIN_IMAGES_DIR = '/data/extDisk1/vvaibhav/vision_language/poyao_bottomup_feats/'
+CAPTION_INFO = '/data/extDisk1/vvaibhav/vision_language/results_20130124.token'
+SPLIT_INFO = '/data/extDisk1/vvaibhav/vision_language/splits/'
+IMAGES_DIR = '/data/extDisk1/vvaibhav/vision_language/data/flickr30k/flickr30k_images/'
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/')
 if not os.path.exists(MODEL_DIR):
     os.makedirs(MODEL_DIR)

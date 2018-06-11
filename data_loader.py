@@ -79,6 +79,7 @@ class DataLoader:
         self.plain_val_ids = get_ids('val', params.split_file, strip=True)
         self.test_ids = get_ids('test', params.split_file)
         self.plain_test_ids = get_ids('test', params.split_file, strip=True)
+        self.regions_in_image = params.regions_in_image
         self.max_caption_len = params.max_caption_len
         kwargs = {'num_workers': 4, 'pin_memory': True} if torch.cuda.is_available() else {}
         #kwargs = {} if torch.cuda.is_available() else {}
@@ -107,8 +108,7 @@ class DataLoader:
                                                                            self.max_caption_len),
                                                             batch_size=1, shuffle=False, **kwargs)
 
-    @staticmethod
-    def hard_negative_mining(model, pos_cap, pos_mask, pos_image, neg_cap, neg_mask, neg_image):
+    def hard_negative_mining(self, model, pos_cap, pos_mask, pos_image, neg_cap, neg_mask, neg_image):
         model.eval()
         neg_mask = torch.autograd.Variable(neg_mask)
         pos_mask = torch.autograd.Variable(pos_mask)
@@ -125,7 +125,7 @@ class DataLoader:
         hard_neg_img = None
         for i in range(bs):
             each_image = z_v[i]
-            similarity = (each_image * z_u).sum(2).sum(1) / neg_mask.sum(dim=1)
+            similarity = (each_image * z_u).sum(2).sum(1) / self.regions_in_image
             hardest_neg = similarity.max(dim=0)[1].data[0]
             if hard_neg_cap is None:
                 hard_neg_cap = neg_cap[hardest_neg].unsqueeze(0)
@@ -136,7 +136,7 @@ class DataLoader:
 
             each_cap = z_u_1[i]
             each_mask = pos_mask[i]
-            similarity = (each_cap * z_v_1).sum(2).sum(1) / each_mask.sum(dim=0)
+            similarity = (each_cap * z_v_1).sum(2).sum(1) / self.regions_in_image
             hardest_neg = similarity.max(dim=0)[1].data[0]
             if hard_neg_img is None:
                 hard_neg_img = neg_image[hardest_neg].unsqueeze(0)
