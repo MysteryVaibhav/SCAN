@@ -69,13 +69,14 @@ class Trainer:
                         neg_image = neg_image.cuda()
 
                     # Sample according to hard negative mining
-                    caption, mask, image, neg_cap, neg_mask, neg_image = self.data_loader.hard_negative_mining(model,
-                                                                                                               caption,
-                                                                                                               mask,
-                                                                                                               image,
-                                                                                                               neg_cap,
-                                                                                                               neg_mask,
-                                                                                                               neg_image)
+                    if self.params.hnm == 1:
+                        caption, mask, image, neg_cap, neg_mask, neg_image = self.data_loader.hard_negative_mining(model,
+                                                                                                                   caption,
+                                                                                                                   mask,
+                                                                                                                   image,
+                                                                                                                   neg_cap,
+                                                                                                                   neg_mask,
+                                                                                                                   neg_image)
                     model.train()
                     optimizer.zero_grad()
                     # forward pass.

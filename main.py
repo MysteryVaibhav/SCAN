@@ -27,6 +27,7 @@ def parse_arguments():
     parser.add_argument("--gamma", dest="gamma", type=int, default=10)
     parser.add_argument("--lambda_1", dest="lambda_1", type=int, default=9)
     parser.add_argument("--validate_every", dest="validate_every", type=int, default=5)
+    parser.add_argument("--hnm", dest="hnm", type=int, default=1)
 
     parser.add_argument("--mode", dest="mode", type=int, default=0)
     parser.add_argument("--model_dir", dest="model_dir", type=str, default=MODEL_DIR)
@@ -61,7 +62,7 @@ def main():
             model = model.cuda()
         print("Loading model...[OK]")
 
-        print("Evaluating model on test set...")
+        print("Evaluating model on test set...(t2i)")
         r_1, r_5, r_10 = evaluator.recall(model, is_test=True)
         print("R@1 : {}".format(r_1))
         print("R@5 : {}".format(r_5))
@@ -76,7 +77,7 @@ def main():
             model = model.cuda()
         print("Loading model...[OK]")
 
-        print("Evaluating model on test set...")
+        print("Evaluating model on test set...(i2t)")
         r_1, r_5, r_10 = evaluator.recall_i2t(model, is_test=True)
         print("R@1 : {}".format(r_1))
         print("R@5 : {}".format(r_5))

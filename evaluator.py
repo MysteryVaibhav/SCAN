@@ -71,7 +71,7 @@ class Evaluator:
         for (images_, caption_, mask_, label) in tqdm(data_loader):
             similarity = None
             for i in range(5):
-                caption, mask, image = self.get_all_image_caption_pairs(caption_, mask_, images_, i)
+                caption, mask, image = self.get_all_image_caption_pairs_1(caption_, mask_, images_, i)
                 s = model(to_variable(caption),
                           to_variable(mask),
                           to_variable(image),
@@ -102,9 +102,9 @@ class Evaluator:
         mask = to_tensor(np.repeat(mask.numpy(), images.size(0), axis=0))
         return caption, mask, images
 
-    def get_all_image_caption_pairs(self, caption, mask, image, idx):
+    def get_all_image_caption_pairs_1(self, caption, mask, image, idx):
         captions = torch.index_select(caption[0], dim=0, index=self.get_idx(idx)).long()
-        masks = torch.index_select(mask[0], dim=0, index=self.get_idx(idx))
+        masks = torch.index_select(mask[0], dim=0, index=self.get_idx(idx)).float()
         image = to_tensor(np.repeat(image.numpy(), captions.size(0), axis=0))
         return captions, masks, image
 

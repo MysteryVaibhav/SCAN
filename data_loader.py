@@ -18,8 +18,10 @@ class CustomDataSet(torch.utils.data.TensorDataset):
         input, mask = self.img_one_hot[self.ids[idx]]
 
         #image = np.random.random((self.regions_in_image, self.visual_feature_dimension))
-        image = np.load(self.image_features_dir + "{}.npy".format(self.ids[idx].split("#")[0])).reshape(
-                       (self.regions_in_image, self.visual_feature_dimension))
+        image = np.zeros((self.regions_in_image, self.visual_feature_dimension))
+        image_ = np.load(self.image_features_dir + "{}.npy".format(self.ids[idx].split("#")[0])).reshape(
+                       (-1, self.visual_feature_dimension))
+        image[:image_.shape[0],:] = image_
 
         r_n = idx
         img_idx = self.ids[idx].split("#")[0]
@@ -29,8 +31,10 @@ class CustomDataSet(torch.utils.data.TensorDataset):
             r_n_idx = self.ids[r_n].split("#")[0]
 
         # Return negative caption and image
-        image_neg = np.load(self.image_features_dir + "{}.npy".format(self.ids[r_n].split("#")[0])).reshape(
-                           (self.regions_in_image, self.visual_feature_dimension))
+        image_neg = np.zeros((self.regions_in_image, self.visual_feature_dimension))
+        image_neg_ = np.load(self.image_features_dir + "{}.npy".format(self.ids[r_n].split("#")[0])).reshape(
+                           (-1, self.visual_feature_dimension))
+        image_neg[:image_neg_.shape[0],:] = image_neg_
         #image_neg = np.random.random((self.regions_in_image, self.visual_feature_dimension))
 
         input_neg, mask_neg = self.img_one_hot[self.ids[r_n]]
@@ -58,8 +62,10 @@ class CustomDataSet1(torch.utils.data.TensorDataset):
         # Get all the 1000 image features
         for i, id in enumerate(self.image_ids):
             #image_features[i] = np.random.random((self.regions_in_image, self.visual_feature_dimension))
-            image_features[i] = np.load(self.image_features_dir + "{}.npy".format(id)).reshape(
-                                       (self.regions_in_image, self.visual_feature_dimension))
+            image_features[i] = np.zeros((self.regions_in_image, self.visual_feature_dimension))
+            image_features_ = np.load(self.image_features_dir + "{}.npy".format(id)).reshape(
+                                       (-1, self.visual_feature_dimension))
+            image_features[i][:image_features_.shape[0],:] = image_features_
         return image_features
 
     def __getitem__(self, idx):
@@ -94,8 +100,10 @@ class CustomDataSet2(torch.utils.data.TensorDataset):
     def __getitem__(self, idx):
         # Get the image
         #image = np.random.random((self.regions_in_image, self.visual_feature_dimension))
-        image = np.load(self.image_features_dir + "{}.npy".format(self.image_ids[idx].split("#")[0])).reshape(
-                       (self.regions_in_image, self.visual_feature_dimension))
+        image = np.zeros((self.regions_in_image, self.visual_feature_dimension))
+        image_ = np.load(self.image_features_dir + "{}.npy".format(self.image_ids[idx].split("#")[0])).reshape(
+                       (-1, self.visual_feature_dimension))
+        image[:image_.shape[0],:] = image_
         return to_tensor(image), to_tensor(self.all_text_features), self.all_text_features_mask, self.image_ids[idx]
 
 
