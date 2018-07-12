@@ -116,7 +116,7 @@ class IaccDataSet(torch.utils.data.TensorDataset):
         self.visual_feature_dimension = visual_feature_dimension
 
     def __len__(self):
-        return self.shot_ids
+        return len(self.shot_ids)
 
     def __getitem__(self, idx):
         shot_id = self.shot_ids[idx] + ".json"

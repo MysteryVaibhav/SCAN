@@ -140,7 +140,7 @@ class Evaluator:
         for qid, query in queries:
             similarity = None
             caption, mask = self.get_caption_and_mask(query)
-            for image in tqdm(queries):
+            for image in tqdm(self.data_loader.iacc_data_loader):
                 s = model(to_variable(caption),
                         to_variable(mask),
                         to_variable(image),
