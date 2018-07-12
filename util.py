@@ -51,15 +51,6 @@ def get_captions(caption_file):
     return img_to_caption, max_len, id_img
 
 
-def process_words(sentence, cached_stop_words=None, lemmatizer=None):
-    if cached_stop_words is not None:
-        words = [word for word in sentence.split(" ") if word not in cached_stop_words]
-        words = [lemmatizer.lemmatize(word) for word in words]
-        return words
-    else:
-        return sentence.split(" ")
-
-
 def concatenate_all_captions(img_to_caption):
     new_img_to_caption = {}
     max_caption_len = 0
@@ -79,6 +70,15 @@ def get_words(list_of_sentences):
     return words
 
 
+def process_words(sentence, cached_stop_words=None, lemmatizer=None):
+    if cached_stop_words is not None:
+        words = [word for word in sentence.split(" ") if word not in cached_stop_words]
+        words = [lemmatizer.lemmatize(word) for word in words]
+        return words
+    else:
+        return sentence.split(" ")
+
+
 def frequency_map(img_caption):
     word_freq = {}
     for _, caption in img_caption.items():
@@ -96,6 +96,28 @@ def construct_vocab(word_freq, k):
             if word not in word_idx:
                 word_idx[word] = len(word_idx)
     return word_idx
+
+
+caption_info = {}
+with open(CAPTION_INFO, 'r', encoding='utf-8') as caption_data:
+    i = 0
+    for lines in caption_data.readlines():
+        split_line = lines.split("\t")
+        img_id = split_line[0]
+        caption = split_line[1]
+        img_id = img_id.replace(".jpg", "")
+        caption_info[img_id] = caption
+
+img_caption, max_len, _ = get_captions(CAPTION_INFO)
+print("Max len: {}".format(max_len))
+word_freq = frequency_map(img_caption)
+word_idx = construct_vocab(word_freq, 5)
+print("Total words in vocabulary: {}".format(len(word_idx) + 2))
+
+
+def get_query_encoding(caption):
+    words = process_words(caption)
+    return encode_caption(words, word_idx, len(words))
 
 
 def encode_caption(caption, word_idx, max_len):
@@ -120,11 +142,6 @@ def img_caption_one_hot(img_caption, word_idx, max_len):
 
 
 def run(caption_file):
-    img_caption, max_len, _ = get_captions(caption_file)
-    print("Max len: {}".format(max_len))
-    word_freq = frequency_map(img_caption)
-    word_idx = construct_vocab(word_freq, 5)
-    print("Total words in vocabulary: {}".format(len(word_idx) + 2))
     img_one_hot_and_mask = img_caption_one_hot(img_caption, word_idx, max_len)
     return img_one_hot_and_mask
 
@@ -180,9 +197,3 @@ def extract_concept_vectors(concepts_dir, number_of_concepts):
             scores_dict[img] = score
     np.save('concept_vectors.npy', scores_dict)
     return scores_dict
-
-
-if __name__ == '__main__':
-    run(CAPTION_INFO)
-    extract_concept_vectors(CONCEPT_DIR)
-

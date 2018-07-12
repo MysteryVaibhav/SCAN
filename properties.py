@@ -35,3 +35,10 @@ if not os.path.exists(MODEL_DIR):
 #CAPTION_INFO = 'C:\\Users\\myste\\Downloads\\results_20130124.token'
 #SPLIT_INFO = 'C:\\Users\\myste\\Downloads\\split\\'
 #CONCEPT_DIR = 'C:\\Users\\myste\\Downloads\\semantic_feat\\'
+
+# AVS Paths
+AVS_QUERIES = 'C:\\Users\\myste\\Downloads\\avs2018\\tv16.avs.topics'
+AVS_KEYFRAMES_LIST = 'C:\\Users\\myste\\Downloads\\avs2018\\keyframes_rename.lst'
+AVS_KEYFRAMES_FEAT = 'C:\\Users\\myste\\Downloads\\avs2018\\'
+AVS_BATCH_SIZE = 500
+AVS_K = 1000

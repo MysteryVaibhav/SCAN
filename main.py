@@ -13,10 +13,13 @@ def parse_arguments():
     parser.add_argument("--image_features_dir", dest="image_features_dir", type=str, default=TRAIN_IMAGES_DIR)
     parser.add_argument("--caption_file", dest="caption_file", type=str, default=CAPTION_INFO)
     parser.add_argument("--split_file", dest="split_file", type=str, default=SPLIT_INFO)
-
+    parser.add_argument("--keyframes_list", dest="keyframes_list", type=str, default=AVS_KEYFRAMES_LIST)
+    parser.add_argument("--keyframes_feats_dir", dest="keyframes_feats_dir", type=str, default=AVS_KEYFRAMES_FEAT)
+    parser.add_argument("--query_file", dest="query_file", type=str, default=AVS_QUERIES)
     parser.add_argument("--hidden_dimension", dest="hidden_dimension", type=int, default=HIDDEN_DIMENSION)
     parser.add_argument("--embedding_dimension", dest="embedding_dimension", type=int, default=EMBEDDING_DIMENSION)
-
+    parser.add_argument("--avs_bs", dest="avs_bs", type=int, default=AVS_BATCH_SIZE)
+    parser.add_argument("--avs_k", dest="avs_k", type=int, default=AVS_K)
     parser.add_argument("--batch_size", dest="batch_size", type=int, default=BATCH_SIZE)
     parser.add_argument("--lr", dest="lr", type=float, default=LEARNING_RATE)
     parser.add_argument("--num_epochs", dest="num_epochs", type=int, default=EPOCHS)
@@ -83,6 +86,18 @@ def main():
         print("R@5 : {}".format(r_5))
         print("R@10 : {}".format(r_10))
         print("Evaluating model on test set...[OK]")
+    elif params.mode == 3:
+        print("Loading model...")
+        model = SCAN(params)
+        model_file_path = os.path.join(params.model_dir, params.model_file_name)
+        model.load_state_dict(torch.load(model_file_path))
+        if torch.cuda.is_available():
+            model = model.cuda()
+        print("Loading model...[OK]")
+
+        print("Evaluating model on avs dataset")
+        evaluator.avs(model)
+        print("Evaluating model on avs dataset...[OK]")
 
 
 if __name__ == '__main__':

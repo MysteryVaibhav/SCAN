@@ -130,3 +130,46 @@ class Evaluator:
         if idx == 4:
             return self.idx_4
 
+    def avs(self, model):
+        model.eval()
+        queries = self.get_queries()
+
+        # Write results in the file
+        file = open("avs_results", "w", encoding="utf8")
+
+        for qid, query in queries:
+            similarity = None
+            caption, mask = self.get_caption_and_mask(query)
+            for image in tqdm(queries):
+                s = model(to_variable(caption),
+                        to_variable(mask),
+                        to_variable(image),
+                        False)
+                if similarity is None:
+                    similarity = s.data.cpu().numpy()
+                else:
+                    similarity = np.concatenate((similarity, s.data.cpu().numpy()), axis=0)
+
+            # Compute similarity with the existing images
+            top_k_img_idx = (-similarity[:]).argsort()[:self.params.avs_k]
+            for i, idx in enumerate(top_k_img_idx):
+                file.write("1{}0 {} {} {} INF\n".format(qid, self.data_loader.shot_ids[idx], i + 1, 9999 - i))
+
+        file.close()
+
+    def get_queries(self):
+        query_file = self.params.query_file
+        # Loading the queries
+        file = open(query_file, "r", encoding='utf8')
+        queries = []
+        for line in file.readlines():
+            lines = line.split(":")
+            query = lines[1].strip().lower()
+            queries.append((lines[0], query))
+        return queries
+
+    def get_caption_and_mask(self, query):
+        caption, _ = get_query_encoding(query)
+        caption = np.tile(caption, (self.params.avs_bs, 1))
+        mask = np.ones((self.params.avs_bs, caption.shape[1]))
+        return to_tensor(caption).long(), to_tensor(mask).float()

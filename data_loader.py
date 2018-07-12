@@ -1,5 +1,6 @@
 import torch.utils.data
 from util import *
+import json
 
 
 class CustomDataSet(torch.utils.data.TensorDataset):
@@ -107,6 +108,25 @@ class CustomDataSet2(torch.utils.data.TensorDataset):
         return to_tensor(image), to_tensor(self.all_text_features), self.all_text_features_mask, self.image_ids[idx]
 
 
+class IaccDataSet(torch.utils.data.TensorDataset):
+    def __init__(self, shot_ids, keyframes_feats_dir, regions_in_image, visual_feature_dimension):
+        self.keyframes_feats_dir = keyframes_feats_dir
+        self.shot_ids = shot_ids
+        self.regions_in_image = regions_in_image
+        self.visual_feature_dimension = visual_feature_dimension
+
+    def __len__(self):
+        return self.shot_ids
+
+    def __getitem__(self, idx):
+        shot_id = self.shot_ids[idx] + ".json"
+        feat_file = open(self.keyframes_feats_dir + shot_id, "r", encoding="utf-8")
+        feat_ = np.array(json.load(feat_file)['feats'])
+        feat = np.zeros((self.regions_in_image, self.visual_feature_dimension))
+        feat[:feat_.shape[0], :] = feat_
+        return to_tensor(feat)
+
+
 class DataLoader:
     def __init__(self, params):
         self.params = params
@@ -118,6 +138,7 @@ class DataLoader:
         self.plain_test_ids = get_ids('test', params.split_file, strip=True)
         self.regions_in_image = params.regions_in_image
         self.max_caption_len = params.max_caption_len
+        self.shot_ids = self.get_shot_ids()
         kwargs = {'num_workers': 4, 'pin_memory': True} if torch.cuda.is_available() else {}
         #kwargs = {} if torch.cuda.is_available() else {}
         self.training_data_loader = torch.utils.data.DataLoader(CustomDataSet(self.img_one_hot,
@@ -160,6 +181,10 @@ class DataLoader:
                                                                                params.visual_feature_dimension,
                                                                                params.image_features_dir),
                                                                 batch_size=1, shuffle=False, **kwargs)
+        self.iacc_data_loader = torch.utils.data.DataLoader(IaccDataSet(self.shot_ids, params.keyframes_feats_dir,
+                                                                        params.regions_in_image,
+                                                                        params.visual_feature_dimension),
+                                                            batch_size=params.avs_bs, shuffle=False, **kwargs)
 
     @staticmethod
     def hard_negative_mining(model, pos_cap, pos_mask, pos_image, neg_cap, neg_mask, neg_image):
@@ -198,3 +223,10 @@ class DataLoader:
                 hard_neg_img = torch.cat((hard_neg_img, neg_image[hardest_neg].unsqueeze(0)), dim=0)
 
         return pos_cap, pos_mask.data, pos_image, hard_neg_cap, hard_neg_mask, hard_neg_img
+
+    def get_shot_ids(self):
+        file = open(self.params.keyframes_list, "r", encoding='utf8')
+        shots = []
+        for line in file.readlines():
+            shots.append(line.strip())
+        return shots
