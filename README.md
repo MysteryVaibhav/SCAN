@@ -16,8 +16,10 @@ python main.py --mode 1
 
 Note: Look up main.py for passing additional arguments while training.
 
-Results on master branch:
+Results on _fast branch_ which is a faster version of master and is a t2i model:
 
 |r@1 (t2i)   |r@5 (t2i)   |r@10 (t2i)  |r@1 (i2t)  |r@5 (i2t)  |r@10 (i2t) |
 |------|------|------|-----|-----|-----|
 |0.48314|0.7674|0.824|0.624|0.878|0.929|
+
+
